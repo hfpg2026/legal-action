@@ -74,6 +74,8 @@ runs:
       working-directory: ./legal-action
 
     - name: Generate SBOM artifacts on packages
+      env:
+        PYTHONUNBUFFERED: 1
       run: uv run oarslily .
       shell: bash
       working-directory: ./legal-action
