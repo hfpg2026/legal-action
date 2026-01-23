@@ -1,0 +1,98 @@
+name: 'Legal Action'
+description: 'Checks your repository for OSS license compliance'
+branding:
+  icon: 'file-text'
+  color: 'blue'
+inputs:
+  package-manager:
+    description: 'Package manager to use (e.g., npm, pnpm)'
+    required: false
+    default: 'pnpm'
+  node-version:
+    description: 'Node.js version to use'
+    required: false
+    default: '20'
+  # TODO: Specify path to custom policy file
+runs:
+  using: 'composite'
+  steps:
+    - name: Checkout source repository
+      uses: actions/checkout@v4
+      with:
+        path: ./legal-action
+
+    # Setup environment with pnpm, if specified
+
+    - name: Setup pnpm
+      if: inputs.package-manager == 'pnpm'
+      uses: pnpm/action-setup@v4
+      with:
+        version: 10.7.1
+
+    - name: Setup Node.js for pnpm
+      if: inputs.package-manager == 'pnpm'
+      uses: actions/setup-node@v4
+      with:
+        node-version: "${{ inputs.node-version }}"
+        cache: "pnpm"
+        cache-dependency-path: ./legal-action/pnpm-lock.yaml
+
+    - name: Install dependencies
+      if: inputs.package-manager == 'pnpm'
+      run: pnpm install --prod
+      shell: bash
+      working-directory: ./legal-action
+
+
+    # Setup environment with npm, if specified
+
+    - name: Setup Node.js for npm
+      if: inputs.package-manager == 'npm'
+      uses: actions/setup-node@v4
+      with:
+        node-version: "${{ inputs.node-version }}"
+        cache: "npm"
+        cache-dependency-path: ./legal-action/package-lock.json
+
+    - name: Install dependencies
+      if: inputs.package-manager == 'npm'
+      run: npm ci --production
+      shell: bash
+      working-directory: ./legal-action
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.14"
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v7
+
+    - name: Install oarslily
+      run: uv tool install git+https://github.com/hfpg2026/oarslily-py --refresh
+      shell: bash
+      working-directory: ./legal-action
+
+    - name: Generate SBOM artifacts on packages
+      run: uv run oarslily .
+      shell: bash
+      working-directory: ./legal-action
+
+    - name: Upload SBOM artifacts
+      uses: actions/upload-artifact@v6
+      with:
+        name: sbom-artifacts
+        path: |
+          ./legal-action/evidence.json
+          ./legal-action/cyclonedx.json
+          ./legal-action/kissbom.json
+
+    - name: Install oarspac
+      run: uv tool install git+https://github.com/hfpg2026/oarspac-py --refresh
+      shell: bash
+      working-directory: ./legal-action
+
+    - name: Audit SBOM artifacts
+      run: uv run oarspac ./kissbom.json
+      shell: bash
+      working-directory: ./legal-action
