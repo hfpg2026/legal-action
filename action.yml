@@ -1,20 +1,24 @@
-name: 'Legal Action'
-description: 'Checks your repository for OSS license compliance'
+name: "Legal Action"
+description: "Checks your repository for OSS license compliance"
 branding:
-  icon: 'file-text'
-  color: 'blue'
+  icon: "file-text"
+  color: "blue"
 inputs:
   package-manager:
-    description: 'Package manager to use (e.g., npm, pnpm)'
+    description: "Package manager to use (e.g., npm, pnpm)"
     required: false
-    default: 'pnpm'
+    default: "pnpm"
   node-version:
-    description: 'Node.js version to use'
+    description: "Node.js version to use"
     required: false
-    default: '20'
+    default: "20"
+  include-only-prod-dependencies:
+    description: "Whether to only install production dependencies"
+    required: false
+    default: "true"
   # TODO: Specify path to custom policy file
 runs:
-  using: 'composite'
+  using: "composite"
   steps:
     - name: Checkout source repository
       uses: actions/checkout@v4
@@ -39,10 +43,9 @@ runs:
 
     - name: Install dependencies
       if: inputs.package-manager == 'pnpm'
-      run: pnpm install --prod
+      run: pnpm install --prod=${{ inputs.include-only-prod-dependencies }}
       shell: bash
       working-directory: ./legal-action
-
 
     # Setup environment with npm, if specified
 
@@ -56,7 +59,7 @@ runs:
 
     - name: Install dependencies
       if: inputs.package-manager == 'npm'
-      run: npm ci --production
+      run: npm ci --production=${{ inputs.include-only-prod-dependencies }}
       shell: bash
       working-directory: ./legal-action
 
