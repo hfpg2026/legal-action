@@ -71,7 +71,12 @@ runs:
 
     - name: Install bun dependencies
       if: inputs.package-manager == 'bun'
-      run: bun install --production=${{ inputs.include-only-prod-dependencies }}
+      run: |
+        if [ "${{ inputs.include-only-prod-dependencies }}" == "true" ]; then
+          bun install --production
+        else
+          bun install
+        fi
       shell: bash
       working-directory: ./legal-action
 
