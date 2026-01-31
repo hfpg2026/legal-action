@@ -5,7 +5,7 @@ branding:
   color: "blue"
 inputs:
   package-manager:
-    description: "Package manager to use (e.g., npm, pnpm)"
+    description: "Package manager to use (e.g., npm, pnpm, bun)"
     required: false
     default: "pnpm"
   node-version:
@@ -41,7 +41,7 @@ runs:
         cache: "pnpm"
         cache-dependency-path: ./legal-action/pnpm-lock.yaml
 
-    - name: Install dependencies
+    - name: Install pnpm dependencies
       if: inputs.package-manager == 'pnpm'
       run: pnpm install --prod=${{ inputs.include-only-prod-dependencies }}
       shell: bash
@@ -57,11 +57,25 @@ runs:
         cache: "npm"
         cache-dependency-path: ./legal-action/package-lock.json
 
-    - name: Install dependencies
+    - name: Install npm dependencies
       if: inputs.package-manager == 'npm'
       run: npm ci --production=${{ inputs.include-only-prod-dependencies }}
       shell: bash
       working-directory: ./legal-action
+
+    # Setup environment with bun, if specified
+
+    - name: Setup bun
+      if: inputs.package-manager == 'bun'
+      uses: oven-sh/setup-bun@v2
+
+    - name: Install bun dependencies
+      if: inputs.package-manager == 'bun'
+      run: bun install --production=${{ inputs.include-only-prod-dependencies }}
+      shell: bash
+      working-directory: ./legal-action
+
+    # Install python and oarslily, generate SBOMs, and audit them
 
     - name: Setup Python
       uses: actions/setup-python@v5
